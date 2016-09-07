@@ -1,5 +1,5 @@
 group 'com.github.daemontus'
-version '1.0'
+version '1.0.0-rc'
 
 task wrapper(type: Wrapper) {
   gradleVersion = '2.14.1'
