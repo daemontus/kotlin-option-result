@@ -40,6 +40,9 @@ sealed class Result<out T, E> {
 
 }
 
+fun <T, E> T.asOk(): Result<T, E> = Result.Ok(this)
+fun <T, E> E.asError(): Result<T, E> = Result.Error(this)
+
 /**
  * Unwraps a result, yielding the content of an Err.
  * Throws IllegalStateException if the value is an Ok, with a custom message provided by the Ok's value.
@@ -74,21 +77,21 @@ fun <T, E> Result<T, E>.isError() = this is Result.Error<T, E>
  * Converts from Result<T, E> to Option<T>.
  * Converts self into an Option<T>, consuming self, and discarding the error, if any.
  */
-fun <T, E> Result<T, E>.ok(): Option<T> = if (this is Result.Ok<T, E>) Option.Some(this.ok) else Option.None()
+fun <T, E> Result<T, E>.ok(): Option<T> = if (this is Result.Ok<T, E>) this.ok.asSome() else none()
 
 /**
  * Converts from Result<T, E> to Option<E>.
  * Converts self into an Option<E>, consuming self, and discarding the value, if any.
  */
-fun <T, E> Result<T, E>.error(): Option<E> = if (this is Result.Error<T, E>) Option.Some(this.error) else Option.None()
+fun <T, E> Result<T, E>.error(): Option<E> = if (this is Result.Error<T, E>) this.error.asSome() else none<E>()
 
 /**
  * Maps a Result<T, E> to Result<U, E> by applying a function to a contained Ok value, leaving an Err value untouched.
  * This function can be used to compose the results of two functions.
  */
 inline fun <T, U, E> Result<T, E>.map(action: (T) -> U): Result<U, E> = when (this) {
-    is Result.Ok<T, E> -> Result.Ok(action(this.ok))
-    is Result.Error<T, E> -> Result.Error(this.error)
+    is Result.Ok<T, E> -> action(this.ok).asOk()
+    is Result.Error<T, E> -> this.error.asError()
 }
 
 /**
@@ -96,8 +99,8 @@ inline fun <T, U, E> Result<T, E>.map(action: (T) -> U): Result<U, E> = when (th
  * This function can be used to pass through a successful result while handling an error.
  */
 inline fun <T, E1, E2> Result<T, E1>.mapError(action: (E1) -> E2): Result<T, E2> = when (this) {
-    is Result.Ok<T, E1> -> Result.Ok(this.ok)
-    is Result.Error<T, E1> -> Result.Error(action(this.error))
+    is Result.Ok<T, E1> -> this.ok.asOk()
+    is Result.Error<T, E1> -> action(this.error).asError()
 }
 
 /**
@@ -105,7 +108,7 @@ inline fun <T, E1, E2> Result<T, E1>.mapError(action: (E1) -> E2): Result<T, E2>
  */
 fun <T, U, E> Result<T, E>.and(resultB: Result<U, E>): Result<U, E> = when (this) {
     is Result.Ok<T, E> -> resultB
-    is Result.Error<T, E> -> Result.Error(this.error)
+    is Result.Error<T, E> -> this.error.asError()
 }
 
 /**
@@ -113,14 +116,14 @@ fun <T, U, E> Result<T, E>.and(resultB: Result<U, E>): Result<U, E> = when (this
  */
 inline fun <T, U, E> Result<T, E>.andThen(resultB: (T) -> Result<U, E>): Result<U, E> = when (this) {
     is Result.Ok<T, E> -> resultB(this.ok)
-    is Result.Error<T, E> -> Result.Error(this.error)
+    is Result.Error<T, E> -> this.error.asError()
 }
 
 /**
  * Returns resultB if the result is Err, otherwise returns the Ok value of self.
  */
 fun <T, E1, E2> Result<T, E1>.or(resultB: Result<T, E2>): Result<T, E2> = when (this) {
-    is Result.Ok<T, E1> -> Result.Ok(this.ok)
+    is Result.Ok<T, E1> -> this.ok.asOk()
     is Result.Error<T, E1> -> resultB
 }
 
@@ -128,7 +131,7 @@ fun <T, E1, E2> Result<T, E1>.or(resultB: Result<T, E2>): Result<T, E2> = when (
  * Returns resultB if the result is Err, otherwise returns the Ok value of self.
  */
 inline fun <T, E1, E2> Result<T, E1>.orElse(resultB: (E1) -> Result<T, E2>): Result<T, E2> = when (this) {
-    is Result.Ok<T, E1> -> Result.Ok(this.ok)
+    is Result.Ok<T, E1> -> this.ok.asOk()
     is Result.Error<T, E1> -> resultB(this.error)
 }
 

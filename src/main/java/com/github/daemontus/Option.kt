@@ -46,6 +46,10 @@ sealed class Option<out T> {
 
 }
 
+fun <T> T.asSome(): Option<T> = Option.Some(this)
+
+fun <T> none(): Option<T> = Option.None()
+
 /**
  * True if this Option is Some.
  */
@@ -83,7 +87,7 @@ inline fun <T> Option<T>.unwrapOrElse(action: () -> T)
  * Transform optional value (if option is some)
  */
 inline fun <T, U> Option<T>.map(action: (T) -> U): Option<U>
-        = if (this is Option.Some<T>) Option.Some(action(this.value)) else Option.None<U>()
+        = if (this is Option.Some<T>) action(this.value).asSome() else none<U>()
 
 /**
  * Transform optional value (if option is some) or return default if option is none.
@@ -99,13 +103,13 @@ inline fun <T, U> Option<T>.mapOrElse(default: () -> U, action: (T) -> U) = this
  * Transform optional value into Result returning specified error if option is none.
  */
 fun <T, E> Option<T>.okOr(error: E): Result<T, E>
-        = if (this is Option.Some<T>) Result.Ok(this.value) else Result.Error(error)
+        = if (this is Option.Some<T>) this.value.asOk() else error.asError()
 
 /**
  * Transform optional value into Result calling specified error if option is none.
  */
 inline fun <T, E> Option<T>.okOrElse(error: () -> E): Result<T, E>
-        = if (this is Option.Some<T>) Result.Ok(this.value) else Result.Error(error())
+        = if (this is Option.Some<T>) this.value.asOk() else error().asError()
 
 /**
  * If option is None, return None, otherwise return optionB.
@@ -117,7 +121,7 @@ fun <T> Option<T>.and(optionB: Option<T>): Option<T>
  * Returns None if the option is None, otherwise calls f with the wrapped value and returns the result. (Flat Map)
  */
 inline fun <T, U> Option<T>.andThen(action: (T) -> Option<U>): Option<U>
-        = if (this is Option.Some<T>) action(this.value) else Option.None()
+        = if (this is Option.Some<T>) action(this.value) else none()
 
 /**
  * Returns the option if it contains a value, otherwise returns optionB.
